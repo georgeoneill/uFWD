@@ -1,0 +1,43 @@
+        case 'uBEM'
+            
+            volfile = spm_file(mesh.sMRI, 'suffix','_uBEM', 'ext','mat');
+            vol = [];
+            
+            if exist(volfile, 'file')
+                vol = ft_read_headmodel(volfile);
+                if ~isfield(vol, 'unit') || ~isequal(vol.unit, 'm')
+                    vol = [];
+                end
+            end
+            
+            if isempty(vol)
+                vol.cond   = [0.3300 0.0041 0.3300];
+                % brain
+                vol.bnd(1) = export(gifti(mesh.tess_iskull), 'ft');
+                % skull
+                vol.bnd(2) = export(gifti(mesh.tess_oskull), 'ft');
+                % skin
+                vol.bnd(3) = export(gifti(mesh.tess_scalp),  'ft');
+                
+                cfg                         = [];
+                cfg.method                 = 'ubem';
+                cfg.siunits                = 'yes';
+                cfg.showcallinfo           = 'no';
+                vol                        = ft_prepare_headmodel(cfg, vol);
+                save(volfile, 'vol', spm_get_defaults('mat.format'));
+                
+            end
+            
+            cfg = [];
+            cfg.headmodel = vol;
+            cfg.grid.pos = mesh.tess_ctx.vert;
+            cfg.moveinward = 6e-3; %move to empirically determined BEM safe zone
+            gridcorrect = ft_prepare_sourcemodel(cfg);
+            
+            mesh_correction    = rmfield(cfg, {'headmodel', 'grid'});
+            
+            mesh.tess_ctx.vert = gridcorrect.pos;
+            
+            vol = volfile;
+            
+            modality            = D.inv{val}.datareg(i).modality;
