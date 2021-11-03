@@ -6,7 +6,7 @@ SPM forward modelling relies on what is available in FieldTrip, this framework a
 
 ### Available models
 
-+ uBEM: an M/EEG 3-shell Boundary Element Model. Based on the model used in MNE-Python, it gives numerically identical reults. (EEG support in uFWD coming immenently).
++ uBEM: an M/EEG 3-shell Boundary Element Model. Based on the model used in MNE-Python, it gives numerically identical reults. (MEG support ready, EEG support in uFWD coming soon).
 
 ## Usage
 
