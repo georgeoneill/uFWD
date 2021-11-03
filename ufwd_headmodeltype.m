@@ -1,4 +1,4 @@
-function [type] = ft_headmodeltype(headmodel, desired)
+function [type] = ufwd_headmodeltype(headmodel, desired)
 
 % FT_HEADMODELTYPE determines the type of volume conduction model of the head
 %
