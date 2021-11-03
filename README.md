@@ -10,4 +10,11 @@ SPM forward modelling relies on what is available in FieldTrip, this framework a
 
 ## Usage
 
-To use after initialising SPM with `spm eeg` add the repository to your MATLAB path with `addpath /path/to/uFEM`
+To use after initialising SPM with `spm eeg` add the repository to your MATLAB path with `addpath /path/to/uFWD`
+Once you have an SPM MEEG object loaded into MATLAB, in this case assigned the variable `D` you can specify a supported model via
+
+```
+D.inv{1}.forward = 'uBEM';
+D = ufwd_eeg_inv_forward(D);
+[L,D] = ufwd_eeg_lgainmat(D);
+```
