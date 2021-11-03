@@ -1,4 +1,4 @@
-function headmodel = ft_headmodel_ubem(meshes, varargin)
+function headmodel = ufwd_headmodel_ubem(meshes, varargin)
 
 % Supply conductivity values depending on number of meshes.
 switch length(meshes)

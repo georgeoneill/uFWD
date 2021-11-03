@@ -277,7 +277,7 @@ switch cfg.method
             ft_error('Either a segmented MRI or data with closed triangulated mesh is required as data input for the bemcp, dipoli or openmeeg method');
         end
         
-        headmodel = ft_headmodel_ubem(geometry, 'conductivity', cfg.conductivity);
+        headmodel = ufwd_headmodel_ubem(geometry, 'conductivity', cfg.conductivity);
         
 end % switch method
 
