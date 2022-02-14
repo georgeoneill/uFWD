@@ -103,7 +103,7 @@ for i = 1:numel(D.inv{val}.forward)
             cfg.headmodel = vol;
             cfg.grid.pos = mesh.tess_ctx.vert;
             cfg.moveinward = 6e-3; %move to empirically determined BEM safe zone
-            gridcorrect = ft_prepare_sourcemodel(cfg);
+            gridcorrect = ufwd_prepare_sourcemodel(cfg);
             
             mesh_correction    = rmfield(cfg, {'headmodel', 'grid'});
             

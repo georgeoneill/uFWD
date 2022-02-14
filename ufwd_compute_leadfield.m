@@ -178,6 +178,10 @@ elseif ismeg
 elseif iseeg
     switch ufwd_headmodeltype(headmodel)
         
+        case 'ubem'
+            headmodel.ubem.els.r = sens.elecpos;
+            lf = ubem_solve_leadfields(dippos,headmodel.ubem)';
+        
         otherwise
             ft_error('unsupported volume conductor model for EEG');
             

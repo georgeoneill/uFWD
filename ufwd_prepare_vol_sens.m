@@ -201,92 +201,22 @@ elseif iseeg
         sens.elecpos = sens.elecpos(selsens,:);
     end
     
-    switch ft_headmodeltype(headmodel)
-        case {'infinite' 'infinite_monopole' 'infinite_currentdipole'}
-            % nothing to do
+    switch ufwd_headmodeltype(headmodel)
+        
+        case 'ubem'
             
-        case {'halfspace', 'halfspace_monopole'}
-            % electrodes' all-to-all distances
-            numelec = size(sens.elecpos,1);
-            ref_el = sens.elecpos(1,:);
-            md = dist( (sens.elecpos-repmat(ref_el,[numelec 1]))' );
-            % take the min distance as reference
-            md = min(md(1,2:end));
-            pos = sens.elecpos;
-            % scan the electrodes and reposition the ones which are in the
-            % wrong halfspace (projected on the plane)... if not too far away!
-            for i=1:size(pos,1)
-                P = pos(i,:);
-                is_in_empty = acos(dot(headmodel.ori,(P-headmodel.pos)./norm(P-headmodel.pos))) < pi/2;
-                if is_in_empty
-                    dPplane = abs(dot(headmodel.ori, headmodel.pos-P, 2));
-                    if dPplane>md
-                        ft_error('Some electrodes are too distant from the plane: consider repositioning them')
-                    else
-                        % project point on plane
-                        Ppr = pointproj(P,[headmodel.pos headmodel.ori]);
-                        pos(i,:) = Ppr;
-                    end
-                end
-            end
-            sens.elecpos = pos;
-            
-        case {'slab_monopole'}
-            % electrodes' all-to-all distances
-            numelc  = size(sens.elecpos,1);
-            ref_elc = sens.elecpos(1,:);
-            md  = dist( (sens.elecpos-repmat(ref_elc,[numelc 1]))' );
-            % choose min distance between electrodes
-            md  = min(md(1,2:end));
-            pos = sens.elecpos;
-            % looks for contacts outside the strip which are not too far away
-            % and projects them on the nearest plane
-            for i=1:size(pos,1)
-                P = pos(i,:);
-                instrip1 = acos(dot(headmodel.ori1,(P-headmodel.pos1)./norm(P-headmodel.pos1))) > pi/2;
-                instrip2 = acos(dot(headmodel.ori2,(P-headmodel.pos2)./norm(P-headmodel.pos2))) > pi/2;
-                is_in_empty = ~(instrip1&instrip2);
-                if is_in_empty
-                    dPplane1 = abs(dot(headmodel.ori1, headmodel.pos1-P, 2));
-                    dPplane2 = abs(dot(headmodel.ori2, headmodel.pos2-P, 2));
-                    if dPplane1>md && dPplane2>md
-                        ft_error('Some electrodes are too distant from the planes: consider repositioning them')
-                    elseif dPplane2>dPplane1
-                        % project point on nearest plane
-                        Ppr = pointproj(P,[headmodel.pos1 headmodel.ori1]);
-                        pos(i,:) = Ppr;
-                    else
-                        % project point on nearest plane
-                        Ppr = pointproj(P,[headmodel.pos2 headmodel.ori2]);
-                        pos(i,:) = Ppr;
-                    end
-                end
-            end
-            sens.elecpos = pos;
-            
-        case {'singlesphere', 'concentricspheres'}
-            % ensure that the electrodes ly on the skin surface
-            radius = max(headmodel.r);
-            pos    = sens.elecpos;
-            if isfield(headmodel, 'o')
-                % shift the the centre of the sphere to the origin
-                pos(:,1) = pos(:,1) - headmodel.o(1);
-                pos(:,2) = pos(:,2) - headmodel.o(2);
-                pos(:,3) = pos(:,3) - headmodel.o(3);
-            end
-            distance = sqrt(sum(pos.^2,2)); % to the center of the sphere
-            if any((abs(distance-radius)/radius)>0.005)
-                ft_warning('electrodes do not lie on skin surface -> using radial projection')
-            end
-            pos = pos * radius ./ [distance distance distance];
-            if isfield(headmodel, 'o')
-                % shift the center back to the original location
-                pos(:,1) = pos(:,1) + headmodel.o(1);
-                pos(:,2) = pos(:,2) + headmodel.o(2);
-                pos(:,3) = pos(:,3) + headmodel.o(3);
-            end
-            sens.elecpos = pos;
-            
+            els.r = sens.elecpos;      
+            % need to repopulate the additional geometry information for
+            % the meshes then compute transfer matrix
+            surf    = ubem_mesh_complete(headmodel.bnd);
+            [xEEG, prj]    = ubem_solve_electrodes(surf,headmodel.ubem,els);
+            % housekeeping - we can save memory by only keeping the
+            % essentials, which is just the transfer matrix
+            headmodel               = rmfield(headmodel,'ubem');
+            headmodel.ubem.xEEG     = xEEG;
+            headmodel.ubem.surfs    = surf;
+            sens.elecpos            = prj;     
+              
         case {'bem', 'dipoli', 'asa', 'bemcp'}
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             % do postprocessing of volume and electrodes in case of BEM model
@@ -341,6 +271,9 @@ elseif iseeg
                     headmodel.mat = headmodel.mat - repmat(avg, size(headmodel.mat,1), 1);
                 end
             end
+            
+            keyboard
+            
         case  'openmeeg'
             % don't do anything, h2em or h2mm generated later in ft_prepare_leadfield
             
@@ -381,6 +314,7 @@ elseif iseeg
                 headmodel.transfer = sb_transfer(headmodel,sens);
                 headmodel.elec = sens;
             end
+            
             
         case 'interpolate'
             % this is to allow moving leadfield files
